@@ -2,6 +2,11 @@ let gameScene = new Phaser.Scene('Game');
 
 gameScene.init = function() {
     this.playerSpeed = 2;
+
+    this.enemyMinY = 80;
+    this.enemyMaxY = 280;
+    this.enemyMinSpeed = 2;
+    this.enemyMaxSpeed = 4;
 }
 
 gameScene.preload = function() {
@@ -11,6 +16,10 @@ gameScene.preload = function() {
     this.load.image('enemy',      'assets/dragon.png');
     this.load.image('goal',       'assets/treasure.png');
 };
+
+function getRangeRandom(min, max) {
+    return min * Math.random() * (max - min);
+}
 
 gameScene.create = function() {
     // create bg sprite
@@ -29,9 +38,14 @@ gameScene.create = function() {
     this.goal.setScale(0.6);
    
     // create an enemy
-    // this.enemy1 = this.add.sprite(250, 180, 'enemy');
-    
-    // this.enemy1.angle = -45;
+    this.enemy = this.add.sprite(120, this.sys.game.config.height / 2, 'enemy');
+    this.enemy.flipX = true;
+    this.enemy.setScale(0.6);
+
+    // set enemy speed
+    let dir = Math.random() < 0.5 ? 1 : -1;
+    let speed = getRangeRandom(this.enemyMinSpeed, this.enemyMaxSpeed);
+    this.enemy.speed = dir * speed;
 };
 
 gameScene.update = function() {
@@ -39,6 +53,15 @@ gameScene.update = function() {
     if(this.input.activePointer.isDown) {
         // player walks
         this.player.x += this.playerSpeed;
+    }
+
+    this.enemy.y += this.enemy.speed;
+    let conditionUp = this.enemy.speed < 0 && this.enemy.y <= this.enemyMinY;
+    let conditionDown = this.enemy.speed > 0 && this.enemy.y >= this.enemyMaxY;
+ 
+    // if we passed the upper or lower limit, reverse
+    if (conditionUp || conditionDown) {
+        this.enemy.speed *= -1;
     }
 
     let playerRect   = this.player.getBounds();
