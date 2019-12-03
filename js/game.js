@@ -7,6 +7,8 @@ gameScene.init = function() {
     this.enemyMaxY = 280;
     this.enemyMinSpeed = 1;
     this.enemyMaxSpeed = 3;
+
+    this.isTerminating = false;
 }
 
 gameScene.preload = function() {
@@ -59,20 +61,10 @@ gameScene.create = function() {
     }, this);
 };
 
-function update_enamy_position(enemy, map)
-{
-    enemy.y += enemy.speed;
-    let conditionUp = enemy.speed < 0 && enemy.y <= map.enemyMinY;
-    let conditionDown = enemy.speed > 0 && enemy.y >= map.enemyMaxY;
-
-    // if we passed the upper or lower limit, reverse
-    if (conditionUp || conditionDown) {
-        enemy.speed *= -1;
-    }
-}
-
 gameScene.update = function() {
-    // this.enemy1.angle += 1;
+    if (this.isTerminating)
+        return;
+
     if(this.input.activePointer.isDown) {
         // player walks
         this.player.x += this.playerSpeed;
@@ -91,6 +83,17 @@ gameScene.update = function() {
         return;
     }
 
+    function update_enamy_position(enemy, map)
+    {
+        enemy.y += enemy.speed;
+        let conditionUp = enemy.speed < 0 && enemy.y <= map.enemyMinY;
+        let conditionDown = enemy.speed > 0 && enemy.y >= map.enemyMaxY;
+
+        // if we passed the upper or lower limit, reverse
+        if (conditionUp || conditionDown) {
+            enemy.speed *= -1;
+        }
+    }
 
     // Enamy calculation
     Phaser.Actions.Call(this.enemies.getChildren(), function(enemy) {
@@ -98,16 +101,28 @@ gameScene.update = function() {
 
         let enemyRect  = enemy.getBounds();
         if (Phaser.Geom.Intersects.RectangleToRectangle(playerRect, enemyRect)) {
-            console.log('Game over!');
-     
-            // restart the Scene
-            this.scene.restart();
-    
-            // make sure we leave this method
-            return;
+            return this.gameOver();
         }
 
     }, this);
+}
+
+gameScene.gameOver = function() {
+    console.log('Game over!');
+
+    this.isTerminating = true;
+
+    this.cameras.main.shake(500);
+    this.cameras.main.on('camerashakecomplete', function(camera, effect) {
+        this.cameras.main.fade(500);
+    }, this);
+
+    this.cameras.main.on('camerafadeoutcomplete', function(camera, effect) {
+        this.scene.restart();
+    }, this);
+
+    // make sure we leave this method
+    return;
 }
 
 let config = {
