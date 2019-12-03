@@ -5,8 +5,8 @@ gameScene.init = function() {
 
     this.enemyMinY = 80;
     this.enemyMaxY = 280;
-    this.enemyMinSpeed = 2;
-    this.enemyMaxSpeed = 4;
+    this.enemyMinSpeed = 1;
+    this.enemyMaxSpeed = 3;
 }
 
 gameScene.preload = function() {
@@ -18,7 +18,7 @@ gameScene.preload = function() {
 };
 
 function getRangeRandom(min, max) {
-    return min * Math.random() * (max - min);
+    return min + Math.random() * (max - min);
 }
 
 gameScene.create = function() {
@@ -38,15 +38,38 @@ gameScene.create = function() {
     this.goal.setScale(0.6);
    
     // create an enemy
-    this.enemy = this.add.sprite(120, this.sys.game.config.height / 2, 'enemy');
-    this.enemy.flipX = true;
-    this.enemy.setScale(0.6);
+    this.enemies = this.add.group({
+        key: 'enemy',
+        repeat: 5,
+        setXY: {
+            x: 90,
+            y: 100,
+            stepX: 85,
+            stepY: 20
+        }
+    })
 
-    // set enemy speed
-    let dir = Math.random() < 0.5 ? 1 : -1;
-    let speed = getRangeRandom(this.enemyMinSpeed, this.enemyMaxSpeed);
-    this.enemy.speed = dir * speed;
+    Phaser.Actions.ScaleXY(this.enemies.getChildren(), -0.4, -0.4)
+    Phaser.Actions.Call(this.enemies.getChildren(), function(enemy) {
+        enemy.flipX = true;
+
+        let dir = Math.random() < 0.5 ? 1 : -1;
+        let speed = getRangeRandom(this.enemyMinSpeed, this.enemyMaxSpeed);
+        enemy.speed = dir * speed;
+    }, this);
 };
+
+function update_enamy_position(enemy, map)
+{
+    enemy.y += enemy.speed;
+    let conditionUp = enemy.speed < 0 && enemy.y <= map.enemyMinY;
+    let conditionDown = enemy.speed > 0 && enemy.y >= map.enemyMaxY;
+
+    // if we passed the upper or lower limit, reverse
+    if (conditionUp || conditionDown) {
+        enemy.speed *= -1;
+    }
+}
 
 gameScene.update = function() {
     // this.enemy1.angle += 1;
@@ -55,18 +78,9 @@ gameScene.update = function() {
         this.player.x += this.playerSpeed;
     }
 
-    this.enemy.y += this.enemy.speed;
-    let conditionUp = this.enemy.speed < 0 && this.enemy.y <= this.enemyMinY;
-    let conditionDown = this.enemy.speed > 0 && this.enemy.y >= this.enemyMaxY;
- 
-    // if we passed the upper or lower limit, reverse
-    if (conditionUp || conditionDown) {
-        this.enemy.speed *= -1;
-    }
-
-    let playerRect   = this.player.getBounds();
+    let playerRect = this.player.getBounds();
     let treasureRect = this.goal.getBounds();
- 
+
     if (Phaser.Geom.Intersects.RectangleToRectangle(playerRect, treasureRect)) {
         console.log('reached goal!');
  
@@ -76,6 +90,24 @@ gameScene.update = function() {
         // make sure we leave this method
         return;
     }
+
+
+    // Enamy calculation
+    Phaser.Actions.Call(this.enemies.getChildren(), function(enemy) {
+        update_enamy_position(enemy, this);
+
+        let enemyRect  = enemy.getBounds();
+        if (Phaser.Geom.Intersects.RectangleToRectangle(playerRect, enemyRect)) {
+            console.log('Game over!');
+     
+            // restart the Scene
+            this.scene.restart();
+    
+            // make sure we leave this method
+            return;
+        }
+
+    }, this);
 }
 
 let config = {
