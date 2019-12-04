@@ -17,6 +17,9 @@ gameScene.preload = function() {
     this.load.image('player',     'assets/player.png');
     this.load.image('enemy',      'assets/dragon.png');
     this.load.image('goal',       'assets/treasure.png');
+
+    this.load.spritesheet('enemy_animated', 'assets/dragon_animated.png',
+                        { frameWidth: 70, frameHeight: 70 });
 };
 
 function getRangeRandom(min, max) {
@@ -38,10 +41,10 @@ gameScene.create = function() {
     // goal
     this.goal = this.add.sprite(this.sys.game.config.width - 80, this.sys.game.config.height / 2, 'goal');
     this.goal.setScale(0.6);
-   
+
     // create an enemy
     this.enemies = this.add.group({
-        key: 'enemy',
+        key: 'enemy_animated',
         repeat: 5,
         setXY: {
             x: 90,
@@ -51,6 +54,13 @@ gameScene.create = function() {
         }
     })
 
+    this.anims.create({
+        key: 'walk',
+        frames: this.anims.generateFrameNumbers('enemy_animated', { start: 0, end: 16 }),
+        frameRate: 7,
+        repeat: -1
+    });
+
     Phaser.Actions.ScaleXY(this.enemies.getChildren(), -0.4, -0.4)
     Phaser.Actions.Call(this.enemies.getChildren(), function(enemy) {
         enemy.flipX = true;
@@ -58,6 +68,8 @@ gameScene.create = function() {
         let dir = Math.random() < 0.5 ? 1 : -1;
         let speed = getRangeRandom(this.enemyMinSpeed, this.enemyMaxSpeed);
         enemy.speed = dir * speed;
+
+        enemy.anims.play('walk', true);
     }, this);
 };
 
@@ -129,7 +141,7 @@ let config = {
     type: Phaser.AUTO,
     width: 640,
     height: 360,
-    scene: gameScene
+    scene: gameScene,
 }
 
 let game = new Phaser.Game(config);
