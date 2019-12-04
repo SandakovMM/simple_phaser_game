@@ -15,11 +15,11 @@ gameScene.preload = function() {
     // load images
     this.load.image('background', 'assets/background.png');
     this.load.image('player',     'assets/player.png');
-    this.load.image('enemy',      'assets/dragon.png');
-    this.load.image('goal',       'assets/treasure.png');
 
+    this.load.spritesheet('goal',           'assets/treasure_animated.png',
+                          { frameWidth: 75, frameHeight: 63 });
     this.load.spritesheet('enemy_animated', 'assets/dragon_animated.png',
-                        { frameWidth: 70, frameHeight: 70 });
+                          { frameWidth: 70, frameHeight: 70 });
 };
 
 function getRangeRandom(min, max) {
@@ -41,6 +41,13 @@ gameScene.create = function() {
     // goal
     this.goal = this.add.sprite(this.sys.game.config.width - 80, this.sys.game.config.height / 2, 'goal');
     this.goal.setScale(0.6);
+    this.anims.create({
+        key: 'shine',
+        frames: this.anims.generateFrameNumbers('goal', { start: 0, end: 4 }),
+        frameRate: 3,
+        repeat: -1
+    });
+    this.goal.anims.play('shine', true);
 
     // create an enemy
     this.enemies = this.add.group({
