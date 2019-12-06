@@ -26,31 +26,25 @@ function getRangeRandom(min, max) {
     return min + Math.random() * (max - min);
 }
 
-gameScene.create = function() {
-    // create bg sprite
-    let bg = this.add.sprite(0, 0, 'background');
-   
-    // change the origin to the top-left corner
-    bg.setOrigin(0,0);
-   
-    // create the player
-    this.player = this.add.sprite(40, this.sys.game.config.height / 2, 'player');
-    // we are reducing the width by 50%, and we are doubling the height
-    this.player.setScale(0.5);
-
-    // goal
-    this.goal = this.add.sprite(this.sys.game.config.width - 80, this.sys.game.config.height / 2, 'goal');
-    this.goal.setScale(0.6);
-    this.anims.create({
+function create_goal(scene)
+{
+    scene.goal = scene.add.sprite(scene.sys.game.config.width - 80,
+                                  scene.sys.game.config.height / 2,
+                                  'goal');
+    scene.goal.setScale(0.6);
+    scene.anims.create({
         key: 'shine',
-        frames: this.anims.generateFrameNumbers('goal', { start: 0, end: 4 }),
-        frameRate: 3,
+        frames: scene.anims.generateFrameNumbers('goal',
+                                    { start: 0, end: 4 }),
+        frameRate: 2,
         repeat: -1
     });
-    this.goal.anims.play('shine', true);
+    scene.goal.anims.play('shine', true);
+}
 
-    // create an enemy
-    this.enemies = this.add.group({
+function create_enemies(scene)
+{
+    scene.enemies = scene.add.group({
         key: 'enemy_animated',
         repeat: 5,
         setXY: {
@@ -61,23 +55,39 @@ gameScene.create = function() {
         }
     })
 
-    this.anims.create({
+    scene.anims.create({
         key: 'walk',
-        frames: this.anims.generateFrameNumbers('enemy_animated', { start: 0, end: 16 }),
+        frames: scene.anims.generateFrameNumbers('enemy_animated', { start: 0, end: 16 }),
         frameRate: 7,
         repeat: -1
     });
 
-    Phaser.Actions.ScaleXY(this.enemies.getChildren(), -0.4, -0.4)
-    Phaser.Actions.Call(this.enemies.getChildren(), function(enemy) {
+    Phaser.Actions.ScaleXY(scene.enemies.getChildren(), -0.4, -0.4)
+    Phaser.Actions.Call(scene.enemies.getChildren(), function(enemy) {
         enemy.flipX = true;
 
         let dir = Math.random() < 0.5 ? 1 : -1;
-        let speed = getRangeRandom(this.enemyMinSpeed, this.enemyMaxSpeed);
+        let speed = getRangeRandom(scene.enemyMinSpeed, scene.enemyMaxSpeed);
         enemy.speed = dir * speed;
 
         enemy.anims.play('walk', true);
-    }, this);
+    }, scene);
+}
+
+gameScene.create = function() {
+    // create bg sprite
+    let bg = this.add.sprite(0, 0, 'background');
+
+    // change the origin to the top-left corner
+    bg.setOrigin(0,0);
+
+    // create the player
+    this.player = this.add.sprite(40, this.sys.game.config.height / 2, 'player');
+    // we are reducing the width by 50%, and we are doubling the height
+    this.player.setScale(0.5);
+
+    create_goal(this);
+    create_enemies(this);
 };
 
 gameScene.update = function() {
@@ -94,9 +104,12 @@ gameScene.update = function() {
 
     if (Phaser.Geom.Intersects.RectangleToRectangle(playerRect, treasureRect)) {
         console.log('reached goal!');
+        this.isTerminating = true;
  
-        // restart the Scene
-        this.scene.restart();
+        this.cameras.main.flash(500);
+        this.cameras.main.on('cameraflashcomplete', function(camera, effect) {
+            this.scene.restart();
+        }, this);
 
         // make sure we leave this method
         return;
@@ -119,6 +132,10 @@ gameScene.update = function() {
         update_enamy_position(enemy, this);
 
         let enemyRect  = enemy.getBounds();
+        enemyRect.x += 2;
+        enemyRect.y += 2;
+        enemyRect.width -= 4;
+        enemyRect.height -= 4;
         if (Phaser.Geom.Intersects.RectangleToRectangle(playerRect, enemyRect)) {
             return this.gameOver();
         }
